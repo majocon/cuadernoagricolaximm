@@ -1,4 +1,6 @@
 
+
+
 export interface Parcela {
   id: string;
   nombre: string;
@@ -11,7 +13,7 @@ export interface Parcela {
 
 export interface Cultivo {
   id: string;
-  parcelaId: string;
+  parcela_id: string;
   nombreCultivo: string;
   variedad?: string;
   superficieCultivada: number; // en hectáreas
@@ -35,7 +37,7 @@ export interface RegistroFinanciero {
 
 export enum TipoFactura {
   EMITIDA = 'emitida', // Sales invoice
-  RECIBIDA = 'recibida', // Purchase invoice
+  RECIBida = 'recibida', // Purchase invoice
 }
 
 export interface Factura {
@@ -62,8 +64,8 @@ export enum EstadoTrabajo {
 
 export interface Trabajo {
   id: string;
-  parcelaId?: string; // Optional: task might not be specific to one plot
-  cultivoId?: string; // Optional: task might be general or plot-specific
+  parcela_id?: string; // Optional: task might not be specific to one plot
+  cultivo_id?: string; // Optional: task might be general or plot-specific
   fechaProgramada: string; // YYYY-MM-DD
   fechaRealizacion?: string; // YYYY-MM-DD
   descripcionTarea: string;
@@ -75,6 +77,7 @@ export interface Trabajo {
 }
 
 export interface DatosFiscales {
+  id?: string; // ID from database, not present on creation form
   nombreORazonSocial: string;
   nifCif: string;
   direccion: string;

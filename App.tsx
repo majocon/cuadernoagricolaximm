@@ -18,16 +18,18 @@ import { AppSection, Parcela, Cultivo, RegistroFinanciero, Factura, Trabajo, Dat
 const supabaseUrl = 'https://lbovferknvuidphjaipf.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxib3ZmZXJrbnZ1aWRwaGphaXBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAwNzU1MjgsImV4cCI6MjA3NTY1MTUyOH0.hgEwCC3QqkRaCIj5Xyyy1JQwCQEZpNHVyw04JmzyDNg';
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
+// A fixed, special UUID for the single row of fiscal data.
+const DATOS_FISCALES_FIXED_ID = '00000000-0000-0000-0000-000000000001';
 
 /*
   SUGGESTED SUPABASE TABLE SCHEMAS:
   
   - parcelas: id (uuid, pk), nombre (text), ubicacion (text), superficie (float8), referenciaCatastral (text, nullable), coordenadas (text, nullable), notas (text, nullable)
-  - cultivos: id (uuid, pk), parcelaId (uuid, fk -> parcelas.id), nombreCultivo (text), variedad (text, nullable), superficieCultivada (float8), notas (text, nullable)
+  - cultivos: id (uuid, pk), parcela_id (uuid, fk -> parcelas.id), nombreCultivo (text), variedad (text, nullable), superficieCultivada (float8), notas (text, nullable)
   - registros_financieros: id (uuid, pk), tipo (text), fecha (date), concepto (text), cantidad (float8), categoria (text, nullable), notas (text, nullable)
   - facturas: id (uuid, pk), numeroFactura (text), fecha (date), tipo (text), clienteProveedor (text), clienteProveedorNif (text, nullable), clienteProveedorDireccion (text, nullable), descripcion (text), baseImponible (float8), ivaPorcentaje (float8), totalFactura (float8), pagada (bool), notas (text, nullable)
-  - trabajos: id (uuid, pk), parcelaId (uuid, fk -> parcelas.id, nullable), cultivoId (uuid, fk -> cultivos.id, nullable), fechaProgramada (date), fechaRealizacion (date, nullable), descripcionTarea (text), responsable (text, nullable), estado (text), costeMateriales (float8, nullable), horasTrabajo (float8, nullable), notas (text, nullable)
-  - datos_fiscales: id (int, pk, default 1), nombreORazonSocial (text), nifCif (text), direccion (text), codigoPostal (text), localidad (text), provincia (text), pais (text), email (text, nullable), telefono (text, nullable)
+  - trabajos: id (uuid, pk), parcela_id (uuid, fk -> parcelas.id, nullable), cultivo_id (uuid, fk -> cultivos.id, nullable), fechaProgramada (date), fechaRealizacion (date, nullable), descripcionTarea (text), responsable (text, nullable), estado (text), costeMateriales (float8, nullable), horasTrabajo (float8, nullable), notas (text, nullable)
+  - datos_fiscales: id (uuid, pk), nombreORazonSocial (text), nifCif (text), direccion (text), codigoPostal (text), localidad (text), provincia (text), pais (text), email (text, nullable), telefono (text, nullable) (Note: This app uses a fixed UUID for this single-row table)
   
   RECOMMENDATION: Set up ON DELETE CASCADE for foreign keys (e.g., when a parcela is deleted, its cultivos and trabajos are also deleted) directly in your Supabase table definitions for better data integrity.
 */
@@ -142,27 +144,27 @@ const App: React.FC = () => {
     if (!supabase) return;
     if (!window.confirm('¿Está seguro? Se eliminarán también los cultivos y trabajos asociados a esta parcela.')) return;
     // Note: Best practice is to set up CASCADE DELETE in your database. This is a client-side fallback.
-    const { data: relatedCultivos } = await supabase.from('cultivos').select('id').eq('parcelaId', id);
+    const { data: relatedCultivos } = await supabase.from('cultivos').select('id').eq('parcela_id', id);
     const cultivoIds = relatedCultivos?.map(c => c.id) || [];
-    if (cultivoIds.length > 0) await supabase.from('trabajos').delete().in('cultivoId', cultivoIds);
-    await supabase.from('trabajos').delete().eq('parcelaId', id);
-    await supabase.from('cultivos').delete().eq('parcelaId', id);
+    if (cultivoIds.length > 0) await supabase.from('trabajos').delete().in('cultivo_id', cultivoIds);
+    await supabase.from('trabajos').delete().eq('parcela_id', id);
+    await supabase.from('cultivos').delete().eq('parcela_id', id);
     await handleDeleteItem(setParcelas, 'parcelas', id);
-    setTrabajos(prev => prev.filter(t => t.parcelaId !== id && !cultivoIds.includes(t.cultivoId || '')));
-    setCultivos(prev => prev.filter(c => c.parcelaId !== id));
+    setTrabajos(prev => prev.filter(t => t.parcela_id !== id && !cultivoIds.includes(t.cultivo_id || '')));
+    setCultivos(prev => prev.filter(c => c.parcela_id !== id));
   };
   
   const handleDeleteCultivo = async (id: string) => {
     if (!supabase) return;
     if (!window.confirm('¿Está seguro? Se eliminarán también los trabajos asociados a este cultivo.')) return;
-    await supabase.from('trabajos').delete().eq('cultivoId', id);
+    await supabase.from('trabajos').delete().eq('cultivo_id', id);
     await handleDeleteItem(setCultivos, 'cultivos', id);
-    setTrabajos(prev => prev.filter(t => t.cultivoId !== id));
+    setTrabajos(prev => prev.filter(t => t.cultivo_id !== id));
   };
 
   const handleSaveDatosFiscales = async (data: DatosFiscales) => {
       if (!supabase) return;
-      const dataToSave = { ...data, id: 1 }; // Use a fixed ID for the single row
+      const dataToSave = { ...data, id: DATOS_FISCALES_FIXED_ID };
       const { error } = await supabase.from('datos_fiscales').upsert(dataToSave);
       if (error) { alert(`Error al guardar datos fiscales: ${error.message}`); } 
       else { setDatosFiscales(dataToSave); }
@@ -191,7 +193,10 @@ const App: React.FC = () => {
                 if (error) throw error;
             }
         }
-        if (data.datosFiscales) await supabase.from('datos_fiscales').insert({ ...data.datosFiscales, id: 1 });
+        if (data.datosFiscales) {
+            const { id, ...fiscalData } = data.datosFiscales; // Safely remove any existing id
+            await supabase.from('datos_fiscales').insert({ ...fiscalData, id: DATOS_FISCALES_FIXED_ID });
+        }
         if (data.parcelas?.length) await supabase.from('parcelas').insert(data.parcelas);
         if (data.cultivos?.length) await supabase.from('cultivos').insert(data.cultivos);
         if (data.registrosFinancieros?.length) await supabase.from('registros_financieros').insert(data.registrosFinancieros);

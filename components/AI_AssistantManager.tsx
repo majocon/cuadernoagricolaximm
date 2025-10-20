@@ -1,13 +1,11 @@
-
 import React, { useState, useCallback, useRef } from 'react';
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { Button } from './ui/Button.tsx';
 import { TextArea } from './ui/Input.tsx';
 import { SparklesIcon, XMarkIcon, HomeIcon } from './icons/IconComponents.tsx';
 
-// ¡IMPORTANTE! Reemplaza 'TU_API_KEY_DE_GEMINI_AQUI' con tu clave de API real de Google Gemini.
-// Para obtener una clave, visita https://aistudio.google.com/app/apikey
-const GEMINI_API_KEY = 'TU_API_KEY_DE_GEMINI_AQUI';
+// La clave de la API se obtiene de las variables de entorno.
+const GEMINI_API_KEY = process.env.API_KEY;
 
 const fileToGenerativePart = async (file: File) => {
   const base64EncodedDataPromise = new Promise<string>((resolve) => {
@@ -63,8 +61,8 @@ export const AI_AssistantManager: React.FC<AI_AssistantManagerProps> = ({ onGoTo
       return;
     }
     
-    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'TU_API_KEY_DE_GEMINI_AQUI') {
-      setError("La clave de API de Google Gemini no está configurada. Por favor, edita el archivo AI_AssistantManager.tsx para añadirla.");
+    if (!GEMINI_API_KEY) {
+      setError("La clave de API de Google Gemini no está configurada en el entorno de la aplicación.");
       return;
     }
 

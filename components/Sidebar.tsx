@@ -52,6 +52,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentSection, onSelectSectio
                   {isDbConnected ? 'Conectado' : 'Sin Conexión'}
                 </span>
             </div>
+            <div className="text-center mt-2">
+                <a href="https://cuadernoagricolaximm.vercel.app/" target="_blank" rel="noopener noreferrer" className="text-xs text-green-300 hover:text-white underline">
+                    Página del Proyecto
+                </a>
+            </div>
           <div className="text-xs text-green-300 text-center mt-2">
             © {new Date().getFullYear()}
           </div>

@@ -17,7 +17,7 @@ interface CultivosManagerProps {
 }
 
 const initialCultivoFormState: Omit<Cultivo, 'id'> = {
-  parcelaId: '', nombreCultivo: '', variedad: '', superficieCultivada: 0, notas: '',
+  parcela_id: '', nombreCultivo: '', variedad: '', superficieCultivada: 0, notas: '',
 };
 
 export const CultivosManager: React.FC<CultivosManagerProps> = ({ cultivos, parcelas, onAddCultivo, onUpdateCultivo, onDeleteCultivo, onGoToDashboard }) => {
@@ -27,14 +27,14 @@ export const CultivosManager: React.FC<CultivosManagerProps> = ({ cultivos, parc
   const [isPrinting, setIsPrinting] = useState(false);
 
   const parcelaOptions = parcelas.map(p => ({ value: p.id, label: p.nombre }));
-  const getParcelaName = (parcelaId: string) => parcelas.find(p => p.id === parcelaId)?.nombre || 'N/A';
+  const getParcelaName = (parcela_id: string) => parcelas.find(p => p.id === parcela_id)?.nombre || 'N/A';
   const formatHectares = (num: number) => parseFloat(num.toFixed(3));
 
   const handlePrint = useCallback(() => {
     setIsPrinting(true);
     try {
         const headers = ["Cultivo", "Variedad", "Parcela", "Sup. Cultivada (ha)", "Notas"];
-        printDataTable('Informe de Cultivos', headers, cultivos, (c: Cultivo) => [c.nombreCultivo, c.variedad || '-', getParcelaName(c.parcelaId), formatHectares(c.superficieCultivada), c.notas || '']);
+        printDataTable('Informe de Cultivos', headers, cultivos, (c: Cultivo) => [c.nombreCultivo, c.variedad || '-', getParcelaName(c.parcela_id), formatHectares(c.superficieCultivada), c.notas || '']);
     } catch (error) {
         console.error("Error printing:", error);
     } finally {
@@ -44,7 +44,7 @@ export const CultivosManager: React.FC<CultivosManagerProps> = ({ cultivos, parc
 
   const handleOpenModal = useCallback((cultivo?: Cultivo) => {
     setEditingCultivo(cultivo || null);
-    setFormData(cultivo ? cultivo : {...initialCultivoFormState, parcelaId: parcelas[0]?.id || ''});
+    setFormData(cultivo ? cultivo : {...initialCultivoFormState, parcela_id: parcelas[0]?.id || ''});
     setIsModalOpen(true);
   }, [parcelas]);
 
@@ -57,7 +57,7 @@ export const CultivosManager: React.FC<CultivosManagerProps> = ({ cultivos, parc
   
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.parcelaId) { alert("Por favor, seleccione una parcela."); return; }
+    if (!formData.parcela_id) { alert("Por favor, seleccione una parcela."); return; }
     if (editingCultivo) {
       onUpdateCultivo({ ...editingCultivo, ...formData });
     } else {
@@ -81,7 +81,7 @@ export const CultivosManager: React.FC<CultivosManagerProps> = ({ cultivos, parc
           <tr key={cultivo.id}>
             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{cultivo.nombreCultivo}</td>
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{cultivo.variedad || '-'}</td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{getParcelaName(cultivo.parcelaId)}</td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{getParcelaName(cultivo.parcela_id)}</td>
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatHectares(cultivo.superficieCultivada)}</td>
             <ItemActionButtons onEdit={() => handleOpenModal(cultivo)} onDelete={() => handleDelete(cultivo.id)} />
           </tr>
@@ -91,7 +91,7 @@ export const CultivosManager: React.FC<CultivosManagerProps> = ({ cultivos, parc
 
       <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={editingCultivo ? 'Editar Cultivo' : 'Añadir Cultivo'}>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Select label="Parcela" name="parcelaId" value={formData.parcelaId} onChange={handleChange} options={parcelaOptions} required disabled={parcelaOptions.length === 0} placeholder="Seleccione una parcela"/>
+          <Select label="Parcela" name="parcela_id" value={formData.parcela_id} onChange={handleChange} options={parcelaOptions} required disabled={parcelaOptions.length === 0} placeholder="Seleccione una parcela"/>
           <Input label="Nombre del Cultivo" name="nombreCultivo" value={formData.nombreCultivo} onChange={handleChange} required />
           <Input label="Variedad (Opcional)" name="variedad" value={formData.variedad || ''} onChange={handleChange} />
           <Input label="Superficie Cultivada (ha)" name="superficieCultivada" type="number" step="0.001" value={formData.superficieCultivada} onChange={handleChange} required min="0"/>
