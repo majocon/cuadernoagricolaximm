@@ -1,0 +1,8 @@
+{
+  "name": "Cuaderno de Campo Agrícola",
+  "description": "Una aplicación para gestionar parcelas, cultivos, finanzas, facturas y trabajos agrícolas. Los datos se guardan localmente en el navegador.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "prompt": ""
+}

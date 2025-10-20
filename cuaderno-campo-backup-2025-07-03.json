@@ -1,0 +1,73 @@
+{
+  "appName": "Cuaderno de Campo Agrícola",
+  "version": "1.0",
+  "exportedAt": "2025-07-03T10:10:52.203Z",
+  "data": {
+    "parcelas": [
+      {
+        "nombre": "Les Bases",
+        "ubicacion": "Benifairo de les Valls",
+        "superficie": 3000,
+        "referenciaCatastral": "46058A001001320000OL",
+        "coordenadas": "",
+        "notas": "150 ARBOLES PLANTACION 2020",
+        "id": "f54d104f-82ae-422c-a776-79c554445147"
+      }
+    ],
+    "cultivos": [],
+    "registrosFinancieros": [
+      {
+        "tipo": "gasto",
+        "fecha": "2025-07-03",
+        "concepto": "gomas de riego",
+        "cantidad": 120,
+        "categoria": "Riego",
+        "notas": "FERRETERIA FAURA",
+        "id": "6f16e04c-f6fd-493a-8ede-66a135c36b20"
+      }
+    ],
+    "facturas": [
+      {
+        "numeroFactura": "001",
+        "fecha": "2025-07-03",
+        "tipo": "emitida",
+        "clienteProveedor": "juan peres del pero",
+        "clienteProveedorNif": "12345678b",
+        "clienteProveedorDireccion": "Calle del Olmo N2 Faura (Valencia)",
+        "descripcion": "DSFDSFSFS",
+        "baseImponible": 2000,
+        "ivaPorcentaje": 21,
+        "pagada": false,
+        "notas": "DFSDGFDS",
+        "totalFactura": 2420,
+        "id": "d6b248f2-612d-4622-948e-14f44df5e623"
+      }
+    ],
+    "trabajos": [
+      {
+        "parcelaId": "f54d104f-82ae-422c-a776-79c554445147",
+        "cultivoId": "",
+        "fechaProgramada": "2025-07-03",
+        "fechaRealizacion": "",
+        "descripcionTarea": "PONER LAS GOMAS RIEGO",
+        "responsable": "",
+        "estado": "pendiente",
+        "costeMateriales": 120,
+        "horasTrabajo": 2,
+        "notas": "",
+        "id": "0d395442-f32a-4b21-a664-393adaf4dec9"
+      }
+    ],
+    "datosFiscales": {
+      "nombreORazonSocial": "JOAQUIN GERMAN CONDOMINA RAMON",
+      "nifCif": "19100821R",
+      "direccion": "CIRILO AMOROS 25",
+      "codigoPostal": "46512",
+      "localidad": "FAURA",
+      "provincia": "VALENCIA",
+      "pais": "España",
+      "email": "majocon@gmail.com",
+      "telefono": "+34666316290"
+    }
+  }
+}

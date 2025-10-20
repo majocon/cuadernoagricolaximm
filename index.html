@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cuaderno de Campo Agrícola</title>
+  <link rel="icon" href="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3e%3crect width='24' height='24' rx='4' fill='%2316a34a'/%3e%3cpath fill='%23FFFFFF' d='M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22l1.6-2.4C9.58,15.64 13,12 17,12a5,5 0 0,0,0-10a5,5 0 0,0-5,5a1,1 0,0,1-2,0a7,7 0 0,1,7-7a7,7 0 0,1,0,14c-6,0-9-6-9.5-8.34A1,1 0 0,1,6.5,7.5c.5,2.33,3.5,7.5,10.5,7.5a3,3 0 0,0,0-6a3,3 0 0,0-3,3a1,1 0,1,1-2,0a5,5 0 0,1,5-5Z'/%3e%3c/svg%3e" type="image/svg+xml" />
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#16a34a">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/index.css">
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.2.0",
+    "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "uuid": "https://esm.sh/uuid@9.0.1",
+    "@google/genai": "https://esm.sh/@google/genai@0.14.0",
+    "html2pdf.js": "https://esm.sh/html2pdf.js@0.10.1",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.44.4"
+  }
+}
+</script>
+</head>
+<body class="bg-gray-100">
+  <div id="root"></div>
+  <script type="text/babel" data-presets="react,typescript" data-type="module" src="/index.tsx"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(registration => {
+          console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        }).catch(err => {
+          console.log('ServiceWorker registration failed: ', err);
+        });
+      });
+    }
+  </script>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>

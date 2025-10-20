@@ -1,0 +1,17 @@
+{
+  "name": "Cuaderno de Campo Agrícola",
+  "short_name": "CampoApp",
+  "description": "Una aplicación para gestionar parcelas, cultivos, finanzas, facturas y trabajos agrícolas. Los datos se guardan localmente en el navegador.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3f4f6",
+  "theme_color": "#16a34a",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3e%3crect width='24' height='24' rx='4' fill='%2316a34a'/%3e%3cpath fill='%23FFFFFF' d='M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22l1.6-2.4C9.58,15.64 13,12 17,12a5,5 0 0,0,0-10a5,5 0 0,0-5,5a1,1 0,0,1-2,0a7,7 0 0,1,7-7a7,7 0 0,1,0,14c-6,0-9-6-9.5-8.34A1,1 0 0,1,6.5,7.5c.5,2.33,3.5,7.5,10.5,7.5a3,3 0 0,0,0-6a3,3 0 0,0-3,3a1,1 0,1,1-2,0a5,5 0 0,1,5-5Z'/%3e%3c/svg%3e",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
