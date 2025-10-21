@@ -41,6 +41,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ parcelas, cultivos, regist
   const menuRef = useRef<HTMLDivElement>(null);
 
   const totalSuperficieParcelas = parcelas.reduce((sum, p) => sum + p.superficie, 0);
+  // FIX: Corrected property name from superficie_cultivada to superficieCultivada.
   const totalSuperficieCultivada = cultivos.reduce((sum, c) => sum + c.superficieCultivada, 0);
   
   const totalIngresos = registros.filter(r => r.tipo === TipoRegistroFinanciero.INGRESO).reduce((sum, r) => sum + r.cantidad, 0);
