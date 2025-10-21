@@ -50,6 +50,20 @@ const keysToSnakeCase = (obj: any): any => {
   return obj;
 };
 
+const getImprovedSupabaseError = (error: any): string => {
+    let userMessage = error.message;
+    if (typeof userMessage === 'string' && userMessage.includes("Could not find the") && userMessage.includes("column")) {
+        const matches = userMessage.match(/column '(.+?)' of '(.+?)'/);
+        if (matches && matches.length === 3) {
+            const columnName = matches[1];
+            const tableName = matches[2];
+            return `Error de Base de Datos: No se encontró la columna '${columnName}' en la tabla '${tableName}'.\n\n` +
+                   `Por favor, vaya a su panel de Supabase, abra la tabla '${tableName}' y asegúrese de que existe una columna con ese nombre exacto (en minúsculas y con guiones bajos, ej: '${columnName}').`;
+        }
+    }
+    return userMessage;
+};
+
 const App: React.FC = () => {
   const [currentSection, setCurrentSection] = useState<AppSection>(AppSection.DASHBOARD);
   
@@ -147,7 +161,7 @@ const App: React.FC = () => {
         .select();
 
     if (error) {
-        alert(`Error al añadir: ${error.message}`);
+        alert(`Error al añadir: ${getImprovedSupabaseError(error)}`);
         return;
     }
 
@@ -174,7 +188,7 @@ const App: React.FC = () => {
         .select();
 
     if (error) {
-        alert(`Error al actualizar: ${error.message}`);
+        alert(`Error al actualizar: ${getImprovedSupabaseError(error)}`);
         return;
     }
     
@@ -190,7 +204,7 @@ const App: React.FC = () => {
   const handleDeleteItem = useCallback(async <T extends Identifiable,>(setter: React.Dispatch<React.SetStateAction<T[]>>, tableName: string, id: string) => {
       if (!supabase) return;
       const { error } = await supabase.from(tableName).delete().eq('id', id);
-      if (error) { alert(`Error al eliminar: ${error.message}`); } 
+      if (error) { alert(`Error al eliminar: ${getImprovedSupabaseError(error)}`); } 
       else { setter(prev => prev.filter(item => item.id !== id)); }
   }, []);
 
@@ -221,9 +235,6 @@ const App: React.FC = () => {
       alert("Error: Cliente de Supabase no inicializado.");
       return false;
     }
-
-    // Prepara el objeto para 'upsert', asegurando que el ID fijo esté presente
-    // y convirtiendo todas las claves a snake_case para que coincidan con la base de datos.
     const payload = keysToSnakeCase({
       ...data,
       id: DATOS_FISCALES_FIXED_ID,
@@ -233,19 +244,18 @@ const App: React.FC = () => {
 
     const { data: savedData, error } = await supabase
       .from('datos_fiscales')
-      .upsert(payload) // 'upsert' insertará o actualizará basándose en la clave primaria (id)
+      .upsert(payload)
       .select()
       .single();
 
     if (error) {
       console.error("Error saving fiscal data:", error);
-      alert(`Error al guardar datos fiscales: ${error.message}`);
+      alert(`Error al guardar datos fiscales: ${getImprovedSupabaseError(error)}`);
       return false;
     }
 
     if (!savedData) {
       alert("Error: Los datos se guardaron, pero no se pudieron recuperar. Revise los permisos (RLS) en Supabase para la operación de LECTURA (SELECT).");
-      // Actualización optimista en caso de que la recuperación falle pero la escritura no.
       setDatosFiscales({ ...data, id: DATOS_FISCALES_FIXED_ID });
       return true;
     }
