@@ -19,7 +19,8 @@ const initialFormState: DatosFiscales = {
 };
 
 export const AjustesManager: React.FC<AjustesManagerProps> = ({ datosFiscales, onSaveDatosFiscales, onGoToDashboard, onExportData, onImportData, onVerifyConnection }) => {
-  const [formData, setFormData] = useState<DatosFiscales>(initialFormState);
+  const [formData, setFormData] = useState<DatosFiscales>(datosFiscales || initialFormState);
+  const [isEditing, setIsEditing] = useState<boolean>(!datosFiscales);
   const [showSuccess, setShowSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
@@ -29,13 +30,10 @@ export const AjustesManager: React.FC<AjustesManagerProps> = ({ datosFiscales, o
   }>({ state: 'idle', message: '' });
 
   useEffect(() => {
-    const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e); };
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, []);
-
-  useEffect(() => {
-    if (datosFiscales) { setFormData(datosFiscales); }
+    // If datosFiscales prop changes (e.g., after initial load or save), update the form data.
+    // Also, determine the initial editing state.
+    setFormData(datosFiscales || initialFormState);
+    setIsEditing(!datosFiscales);
   }, [datosFiscales]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -47,10 +45,21 @@ export const AjustesManager: React.FC<AjustesManagerProps> = ({ datosFiscales, o
     e.preventDefault();
     const success = await onSaveDatosFiscales(formData);
     if (success) {
+      setIsEditing(false); // Exit editing mode on successful save
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     }
   }, [formData, onSaveDatosFiscales]);
+
+  const handleEdit = () => {
+    setIsEditing(true);
+    setShowSuccess(false);
+  };
+  
+  const handleCancel = () => {
+    setFormData(datosFiscales || initialFormState); // Revert changes
+    setIsEditing(false);
+  };
 
   const handleVerifyClick = useCallback(async () => {
     setVerificationStatus({ state: 'verifying', message: 'Verificando...' });
@@ -63,6 +72,12 @@ export const AjustesManager: React.FC<AjustesManagerProps> = ({ datosFiscales, o
     setTimeout(() => setVerificationStatus({ state: 'idle', message: '' }), 5000);
   }, [onVerifyConnection]);
   
+  useEffect(() => {
+    const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e); };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
   const handleInstallClick = async () => {
     if (!installPrompt) return;
     await installPrompt.prompt();
@@ -117,18 +132,27 @@ export const AjustesManager: React.FC<AjustesManagerProps> = ({ datosFiscales, o
         <h2 className="text-xl font-bold text-gray-800 mb-2 border-b pb-2">Mis Datos Fiscales</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <p className="text-sm text-gray-600 mb-4">Estos datos se utilizarán para generar facturas y otros documentos.</p>
-          <Input label="Nombre o Razón Social" name="nombreORazonSocial" value={formData.nombreORazonSocial} onChange={handleChange} required />
-          <Input label="NIF/CIF" name="nifCif" value={formData.nifCif} onChange={handleChange} required />
-          <TextArea label="Dirección Fiscal Completa" name="direccion" value={formData.direccion} onChange={handleChange} required />
+          <Input label="Nombre o Razón Social" name="nombreORazonSocial" value={formData.nombreORazonSocial} onChange={handleChange} required disabled={!isEditing} />
+          <Input label="NIF/CIF" name="nifCif" value={formData.nifCif} onChange={handleChange} required disabled={!isEditing} />
+          <TextArea label="Dirección Fiscal Completa" name="direccion" value={formData.direccion} onChange={handleChange} required disabled={!isEditing} />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Input label="Código Postal" name="codigoPostal" value={formData.codigoPostal} onChange={handleChange} required />
-              <Input label="Localidad" name="localidad" value={formData.localidad} onChange={handleChange} required />
-              <Input label="Provincia" name="provincia" value={formData.provincia} onChange={handleChange} required />
+              <Input label="Código Postal" name="codigoPostal" value={formData.codigoPostal} onChange={handleChange} required disabled={!isEditing} />
+              <Input label="Localidad" name="localidad" value={formData.localidad} onChange={handleChange} required disabled={!isEditing} />
+              <Input label="Provincia" name="provincia" value={formData.provincia} onChange={handleChange} required disabled={!isEditing} />
           </div>
-          <Input label="País" name="pais" value={formData.pais} onChange={handleChange} required />
-          <Input label="Email de Contacto (Opcional)" name="email" type="email" value={formData.email || ''} onChange={handleChange} />
-          <Input label="Teléfono de Contacto (Opcional)" name="telefono" value={formData.telefono || ''} onChange={handleChange} />
-          <div className="flex justify-end pt-4"> <Button type="submit" variant="primary">Guardar Cambios</Button> </div>
+          <Input label="País" name="pais" value={formData.pais} onChange={handleChange} required disabled={!isEditing} />
+          <Input label="Email de Contacto (Opcional)" name="email" type="email" value={formData.email || ''} onChange={handleChange} disabled={!isEditing} />
+          <Input label="Teléfono de Contacto (Opcional)" name="telefono" value={formData.telefono || ''} onChange={handleChange} disabled={!isEditing} />
+          <div className="flex justify-end pt-4 space-x-2">
+            {isEditing ? (
+              <>
+                <Button type="button" variant="secondary" onClick={handleCancel}>Cancelar</Button>
+                <Button type="submit" variant="primary">Guardar Cambios</Button>
+              </>
+            ) : (
+              <Button type="button" variant="primary" onClick={handleEdit}>Editar</Button>
+            )}
+          </div>
           {showSuccess && <p className="mt-4 text-sm text-green-600 bg-green-50 p-3 rounded-md">¡Datos fiscales guardados correctamente!</p>}
         </form>
       </div>
