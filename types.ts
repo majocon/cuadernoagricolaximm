@@ -1,21 +1,20 @@
 
-
 export interface Parcela {
   id: string;
   nombre: string;
   ubicacion: string;
   superficie: number; // en hectáreas
-  referencia_catastral?: string;
+  referenciaCatastral?: string;
   coordenadas?: string; // Formato "latitud,longitud"
   notas?: string;
 }
 
 export interface Cultivo {
   id: string;
-  parcela_id: string;
-  nombre_cultivo: string;
+  parcelaId: string;
+  nombreCultivo: string;
   variedad?: string;
-  superficie_cultivada: number; // en hectáreas
+  superficieCultivada: number; // en hectáreas
   notas?: string;
 }
 
@@ -41,16 +40,16 @@ export enum TipoFactura {
 
 export interface Factura {
   id: string;
-  numero_factura: string;
+  numeroFactura: string;
   fecha: string; // YYYY-MM-DD
   tipo: TipoFactura;
-  cliente_proveedor: string; // Nombre de la entidad externa
-  cliente_proveedor_nif?: string; // NIF/CIF de la entidad externa (opcional)
-  cliente_proveedor_direccion?: string; // Dirección de la entidad externa (opcional)
+  clienteProveedor: string; // Nombre de la entidad externa
+  clienteProveedorNif?: string; // NIF/CIF de la entidad externa (opcional)
+  clienteProveedorDireccion?: string; // Dirección de la entidad externa (opcional)
   descripcion: string;
-  base_imponible: number;
-  iva_porcentaje: number;
-  total_factura: number;
+  baseImponible: number;
+  ivaPorcentaje: number;
+  totalFactura: number;
   pagada: boolean;
   notas?: string;
 }
@@ -63,15 +62,15 @@ export enum EstadoTrabajo {
 
 export interface Trabajo {
   id: string;
-  parcela_id?: string; // Optional: task might not be specific to one plot
-  cultivo_id?: string; // Optional: task might be general or plot-specific
-  fecha_programada: string; // YYYY-MM-DD
-  fecha_realizacion?: string; // YYYY-MM-DD
-  descripcion_tarea: string;
+  parcelaId?: string; // Optional: task might not be specific to one plot
+  cultivoId?: string; // Optional: task might be general or plot-specific
+  fechaProgramada: string; // YYYY-MM-DD
+  fechaRealizacion?: string; // YYYY-MM-DD
+  descripcionTarea: string;
   responsable?: string;
   estado: EstadoTrabajo;
-  coste_materiales?: number;
-  horas_trabajo?: number;
+  costeMateriales?: number;
+  horasTrabajo?: number;
   notas?: string;
 }
 

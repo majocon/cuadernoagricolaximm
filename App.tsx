@@ -204,8 +204,8 @@ const App: React.FC = () => {
     await supabase.from('trabajos').delete().eq('parcela_id', id);
     await supabase.from('cultivos').delete().eq('parcela_id', id);
     await handleDeleteItem(setParcelas, 'parcelas', id);
-    setTrabajos(prev => prev.filter(t => t.parcela_id !== id && !cultivoIds.includes(t.cultivo_id || '')));
-    setCultivos(prev => prev.filter(c => c.parcela_id !== id));
+    setTrabajos(prev => prev.filter(t => t.parcelaId !== id && !cultivoIds.includes(t.cultivoId || '')));
+    setCultivos(prev => prev.filter(c => c.parcelaId !== id));
   };
   
   const handleDeleteCultivo = async (id: string) => {
@@ -213,7 +213,7 @@ const App: React.FC = () => {
     if (!window.confirm('¿Está seguro? Se eliminarán también los trabajos asociados a este cultivo.')) return;
     await supabase.from('trabajos').delete().eq('cultivo_id', id);
     await handleDeleteItem(setCultivos, 'cultivos', id);
-    setTrabajos(prev => prev.filter(t => t.cultivo_id !== id));
+    setTrabajos(prev => prev.filter(t => t.cultivoId !== id));
   };
 
   const handleSaveDatosFiscales = async (data: DatosFiscales): Promise<boolean> => {
@@ -221,60 +221,35 @@ const App: React.FC = () => {
       alert("Error: Cliente de Supabase no inicializado.");
       return false;
     }
-  
+
+    // Prepara el objeto para 'upsert', asegurando que el ID fijo esté presente
+    // y convirtiendo todas las claves a snake_case para que coincidan con la base de datos.
     const payload = keysToSnakeCase({
       ...data,
+      id: DATOS_FISCALES_FIXED_ID,
       email: data.email || null,
       telefono: data.telefono || null,
     });
-    delete payload.id;
-  
-    const { data: existingRecord, error: checkError } = await supabase
+
+    const { data: savedData, error } = await supabase
       .from('datos_fiscales')
-      .select('id')
-      .eq('id', DATOS_FISCALES_FIXED_ID)
-      .maybeSingle();
-  
-    if (checkError) {
-      console.error("Error checking for existing fiscal data:", checkError);
-      alert(`Error al verificar datos fiscales: ${checkError.message}`);
-      return false;
-    }
-  
-    let savedData, error;
-  
-    if (existingRecord) {
-      const response = await supabase
-        .from('datos_fiscales')
-        .update(payload)
-        .eq('id', DATOS_FISCALES_FIXED_ID)
-        .select()
-        .single();
-      savedData = response.data;
-      error = response.error;
-    } else {
-      const insertPayload = { ...payload, id: DATOS_FISCALES_FIXED_ID };
-      const response = await supabase
-        .from('datos_fiscales')
-        .insert(insertPayload) // insert expects an array, but with single() it works with an object
-        .select()
-        .single();
-      savedData = response.data;
-      error = response.error;
-    }
-  
+      .upsert(payload) // 'upsert' insertará o actualizará basándose en la clave primaria (id)
+      .select()
+      .single();
+
     if (error) {
       console.error("Error saving fiscal data:", error);
       alert(`Error al guardar datos fiscales: ${error.message}`);
       return false;
     }
-  
+
     if (!savedData) {
       alert("Error: Los datos se guardaron, pero no se pudieron recuperar. Revise los permisos (RLS) en Supabase para la operación de LECTURA (SELECT).");
-      setDatosFiscales({ ...data, id: DATOS_FISCALES_FIXED_ID }); // Optimistic update
+      // Actualización optimista en caso de que la recuperación falle pero la escritura no.
+      setDatosFiscales({ ...data, id: DATOS_FISCALES_FIXED_ID });
       return true;
     }
-  
+
     setDatosFiscales(savedData);
     return true;
   };
