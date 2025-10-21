@@ -18,7 +18,7 @@ interface TrabajosManagerProps {
 }
 
 const initialTrabajoFormState: Omit<Trabajo, 'id'> = {
-  parcela_id: '', cultivo_id: '', fechaProgramada: new Date().toISOString().split('T')[0], fechaRealizacion: '',
+  parcelaId: '', cultivoId: '', fechaProgramada: new Date().toISOString().split('T')[0], fechaRealizacion: '',
   descripcionTarea: '', responsable: '', estado: EstadoTrabajo.PENDIENTE,
   costeMateriales: 0, horasTrabajo: 0, notas: '',
 };
@@ -38,13 +38,13 @@ export const TrabajosManager: React.FC<TrabajosManagerProps> = ({ trabajos, parc
     try {
         const sorted = [...trabajos].sort((a, b) => new Date(a.fechaProgramada).getTime() - new Date(b.fechaProgramada).getTime());
         printDataTable('Informe de Trabajos', ["Tarea", "Parcela", "Cultivo", "F. Prog.", "F. Real.", "Estado"], sorted,
-            (t: Trabajo) => [ t.descripcionTarea, getParcelaName(t.parcela_id), t.cultivo_id ? getCultivoName(t.cultivo_id) : 'N/A', new Date(t.fechaProgramada).toLocaleDateString('es-ES'), t.fechaRealizacion ? new Date(t.fechaRealizacion).toLocaleDateString('es-ES') : '-', getEstadoLabel(t.estado) ]);
+            (t: Trabajo) => [ t.descripcionTarea, getParcelaName(t.parcelaId), t.cultivoId ? getCultivoName(t.cultivoId) : 'N/A', new Date(t.fechaProgramada).toLocaleDateString('es-ES'), t.fechaRealizacion ? new Date(t.fechaRealizacion).toLocaleDateString('es-ES') : '-', getEstadoLabel(t.estado) ]);
     } catch (error) { console.error("Error printing:", error); } 
     finally { setTimeout(() => setIsPrinting(false), 1000); }
   }, [trabajos, parcelas, cultivos]);
 
   const parcelaOptions = [{ value: '', label: 'Ninguna / General' }, ...parcelas.map(p => ({ value: p.id, label: p.nombre }))];
-  const cultivoOptions = [{ value: '', label: 'Ninguno / General' }, ...cultivos.filter(c => !formData.parcela_id || c.parcela_id === formData.parcela_id).map(c => ({ value: c.id, label: `${c.nombreCultivo} (${getParcelaName(c.parcela_id)})` }))];
+  const cultivoOptions = [{ value: '', label: 'Ninguno / General' }, ...cultivos.filter(c => !formData.parcelaId || c.parcelaId === formData.parcelaId).map(c => ({ value: c.id, label: `${c.nombreCultivo} (${getParcelaName(c.parcelaId)})` }))];
   const estadoOptions = Object.values(EstadoTrabajo).map(e => ({ value: e, label: getEstadoLabel(e) }));
 
   const handleOpenModal = useCallback((trabajo?: Trabajo) => {
@@ -82,8 +82,8 @@ export const TrabajosManager: React.FC<TrabajosManagerProps> = ({ trabajos, parc
         {trabajos.map((trabajo) => (
           <tr key={trabajo.id}>
             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{trabajo.descripcionTarea}</td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{getParcelaName(trabajo.parcela_id)}</td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{trabajo.cultivo_id ? getCultivoName(trabajo.cultivo_id) : 'N/A'}</td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{getParcelaName(trabajo.parcelaId)}</td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{trabajo.cultivoId ? getCultivoName(trabajo.cultivoId) : 'N/A'}</td>
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(trabajo.fechaProgramada).toLocaleDateString('es-ES')}</td>
             <td className="px-6 py-4 whitespace-nowrap text-sm"><span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${trabajo.estado === 'completado' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{getEstadoLabel(trabajo.estado)}</span></td>
             <ItemActionButtons onEdit={() => handleOpenModal(trabajo)} onDelete={() => handleDelete(trabajo.id)} />
@@ -95,8 +95,8 @@ export const TrabajosManager: React.FC<TrabajosManagerProps> = ({ trabajos, parc
       <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={editingTrabajo ? 'Editar Trabajo' : 'Añadir Trabajo'} size="lg">
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input label="Descripción de la Tarea" name="descripcionTarea" value={formData.descripcionTarea} onChange={handleChange} required />
-          <Select label="Parcela (Opcional)" name="parcela_id" value={formData.parcela_id || ''} onChange={handleChange} options={parcelaOptions} />
-          <Select label="Cultivo (Opcional)" name="cultivo_id" value={formData.cultivo_id || ''} onChange={handleChange} options={cultivoOptions} />
+          <Select label="Parcela (Opcional)" name="parcelaId" value={formData.parcelaId || ''} onChange={handleChange} options={parcelaOptions} />
+          <Select label="Cultivo (Opcional)" name="cultivoId" value={formData.cultivoId || ''} onChange={handleChange} options={cultivoOptions} />
           <Input label="Fecha Programada" name="fechaProgramada" type="date" value={formData.fechaProgramada} onChange={handleChange} required />
           <Input label="Fecha Realización (Opcional)" name="fechaRealizacion" type="date" value={formData.fechaRealizacion || ''} onChange={handleChange} />
           <Input label="Responsable (Opcional)" name="responsable" value={formData.responsable || ''} onChange={handleChange} />

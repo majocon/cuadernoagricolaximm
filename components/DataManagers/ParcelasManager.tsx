@@ -54,7 +54,7 @@ export const ParcelasManager: React.FC<ParcelasManagerProps> = ({ parcelas, onAd
   const [viewingParcela, setViewingParcela] = useState<Parcela | null>(null);
   const [isPrinting, setIsPrinting] = useState(false);
 
-  const formatHectares = (num: number) => num.toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
+  const formatHectares = (num: number) => (num || 0).toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
 
   const handlePrint = useCallback(() => {
     setIsPrinting(true);
