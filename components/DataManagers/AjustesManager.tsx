@@ -6,7 +6,7 @@ import { HomeIcon, ArrowDownTrayIcon } from '../icons/IconComponents.tsx';
 
 interface AjustesManagerProps {
   datosFiscales: DatosFiscales | null;
-  onSaveDatosFiscales: (data: DatosFiscales) => Promise<void>;
+  onSaveDatosFiscales: (data: DatosFiscales) => Promise<boolean>;
   onGoToDashboard: () => void;
   onExportData: () => void;
   onImportData: (data: any) => Promise<void>;
@@ -45,9 +45,11 @@ export const AjustesManager: React.FC<AjustesManagerProps> = ({ datosFiscales, o
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSaveDatosFiscales(formData);
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 3000);
+    const success = await onSaveDatosFiscales(formData);
+    if (success) {
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+    }
   }, [formData, onSaveDatosFiscales]);
 
   const handleVerifyClick = useCallback(async () => {
