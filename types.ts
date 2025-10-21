@@ -1,12 +1,11 @@
 
 
-
 export interface Parcela {
   id: string;
   nombre: string;
   ubicacion: string;
   superficie: number; // en hectáreas
-  referenciaCatastral?: string;
+  referencia_catastral?: string;
   coordenadas?: string; // Formato "latitud,longitud"
   notas?: string;
 }
@@ -14,9 +13,9 @@ export interface Parcela {
 export interface Cultivo {
   id: string;
   parcela_id: string;
-  nombreCultivo: string;
+  nombre_cultivo: string;
   variedad?: string;
-  superficieCultivada: number; // en hectáreas
+  superficie_cultivada: number; // en hectáreas
   notas?: string;
 }
 
@@ -37,21 +36,21 @@ export interface RegistroFinanciero {
 
 export enum TipoFactura {
   EMITIDA = 'emitida', // Sales invoice
-  RECIBida = 'recibida', // Purchase invoice
+  RECIBIDA = 'recibida', // Purchase invoice
 }
 
 export interface Factura {
   id: string;
-  numeroFactura: string;
+  numero_factura: string;
   fecha: string; // YYYY-MM-DD
   tipo: TipoFactura;
-  clienteProveedor: string; // Nombre de la entidad externa
-  clienteProveedorNif?: string; // NIF/CIF de la entidad externa (opcional)
-  clienteProveedorDireccion?: string; // Dirección de la entidad externa (opcional)
+  cliente_proveedor: string; // Nombre de la entidad externa
+  cliente_proveedor_nif?: string; // NIF/CIF de la entidad externa (opcional)
+  cliente_proveedor_direccion?: string; // Dirección de la entidad externa (opcional)
   descripcion: string;
-  baseImponible: number;
-  ivaPorcentaje: number;
-  totalFactura: number;
+  base_imponible: number;
+  iva_porcentaje: number;
+  total_factura: number;
   pagada: boolean;
   notas?: string;
 }
@@ -66,18 +65,18 @@ export interface Trabajo {
   id: string;
   parcela_id?: string; // Optional: task might not be specific to one plot
   cultivo_id?: string; // Optional: task might be general or plot-specific
-  fechaProgramada: string; // YYYY-MM-DD
-  fechaRealizacion?: string; // YYYY-MM-DD
-  descripcionTarea: string;
+  fecha_programada: string; // YYYY-MM-DD
+  fecha_realizacion?: string; // YYYY-MM-DD
+  descripcion_tarea: string;
   responsable?: string;
   estado: EstadoTrabajo;
-  costeMateriales?: number;
-  horasTrabajo?: number;
+  coste_materiales?: number;
+  horas_trabajo?: number;
   notas?: string;
 }
 
 export interface DatosFiscales {
-  id?: string; // ID from database, not present on creation form
+  id?: string;
   nombreORazonSocial: string;
   nifCif: string;
   direccion: string;
@@ -85,8 +84,8 @@ export interface DatosFiscales {
   localidad: string;
   provincia: string;
   pais: string;
-  email?: string;
-  telefono?: string;
+  email?: string | null;
+  telefono?: string | null;
 }
 
 export enum AppSection {

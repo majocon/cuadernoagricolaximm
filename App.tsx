@@ -22,17 +22,33 @@ const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supaba
 const DATOS_FISCALES_FIXED_ID = '00000000-0000-0000-0000-000000000001';
 
 /*
-  SUGGESTED SUPABASE TABLE SCHEMAS:
+  SUGGESTED SUPABASE TABLE SCHEMAS (using snake_case):
   
-  - parcelas: id (uuid, pk), nombre (text), ubicacion (text), superficie (float8), referenciaCatastral (text, nullable), coordenadas (text, nullable), notas (text, nullable)
-  - cultivos: id (uuid, pk), parcela_id (uuid, fk -> parcelas.id), nombreCultivo (text), variedad (text, nullable), superficieCultivada (float8), notas (text, nullable)
+  - parcelas: id (uuid, pk), nombre (text), ubicacion (text), superficie (float8), referencia_catastral (text, nullable), coordenadas (text, nullable), notas (text, nullable)
+  - cultivos: id (uuid, pk), parcela_id (uuid, fk -> parcelas.id), nombre_cultivo (text), variedad (text, nullable), superficie_cultivada (float8), notas (text, nullable)
   - registros_financieros: id (uuid, pk), tipo (text), fecha (date), concepto (text), cantidad (float8), categoria (text, nullable), notas (text, nullable)
-  - facturas: id (uuid, pk), numeroFactura (text), fecha (date), tipo (text), clienteProveedor (text), clienteProveedorNif (text, nullable), clienteProveedorDireccion (text, nullable), descripcion (text), baseImponible (float8), ivaPorcentaje (float8), totalFactura (float8), pagada (bool), notas (text, nullable)
-  - trabajos: id (uuid, pk), parcela_id (uuid, fk -> parcelas.id, nullable), cultivo_id (uuid, fk -> cultivos.id, nullable), fechaProgramada (date), fechaRealizacion (date, nullable), descripcionTarea (text), responsable (text, nullable), estado (text), costeMateriales (float8, nullable), horasTrabajo (float8, nullable), notas (text, nullable)
-  - datos_fiscales: id (uuid, pk), nombreORazonSocial (text), nifCif (text), direccion (text), codigoPostal (text), localidad (text), provincia (text), pais (text), email (text, nullable), telefono (text, nullable) (Note: This app uses a fixed UUID for this single-row table)
+  - facturas: id (uuid, pk), numero_factura (text), fecha (date), tipo (text), cliente_proveedor (text), cliente_proveedor_nif (text, nullable), cliente_proveedor_direccion (text, nullable), descripcion (text), base_imponible (float8), iva_porcentaje (float8), total_factura (float8), pagada (bool), notas (text, nullable)
+  - trabajos: id (uuid, pk), parcela_id (uuid, fk -> parcelas.id, nullable), cultivo_id (uuid, fk -> cultivos.id, nullable), fecha_programada (date), fecha_realizacion (date, nullable), descripcion_tarea (text), responsable (text, nullable), estado (text), coste_materiales (float8, nullable), horas_trabajo (float8, nullable), notas (text, nullable)
+  - datos_fiscales: id (uuid, pk), nombre_o_razon_social (text), nif_cif (text), direccion (text), codigo_postal (text), localidad (text), provincia (text), pais (text), email (text, nullable), telefono (text, nullable) (Note: This app uses a fixed UUID for this single-row table)
   
   RECOMMENDATION: Set up ON DELETE CASCADE for foreign keys (e.g., when a parcela is deleted, its cultivos and trabajos are also deleted) directly in your Supabase table definitions for better data integrity.
 */
+
+// --- Data Normalization Utility ---
+// Supabase client converts snake_case columns to camelCase. This utility converts them back.
+const toSnakeCase = (str: string) => str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+
+const keysToSnakeCase = (obj: any): any => {
+  if (Array.isArray(obj)) {
+    return obj.map(v => keysToSnakeCase(v));
+  } else if (obj !== null && typeof obj === 'object') {
+    return Object.keys(obj).reduce((acc, key) => {
+      acc[toSnakeCase(key)] = keysToSnakeCase(obj[key]);
+      return acc;
+    }, {} as any);
+  }
+  return obj;
+};
 
 const App: React.FC = () => {
   const [currentSection, setCurrentSection] = useState<AppSection>(AppSection.DASHBOARD);
@@ -77,11 +93,11 @@ const App: React.FC = () => {
               if (datosFiscalesRes.error && datosFiscalesRes.error.code !== 'PGRST116') { throw datosFiscalesRes.error; }
 
               setIsDbConnected(true);
-              setParcelas(parcelasRes.data || []);
-              setCultivos(cultivosRes.data || []);
-              setRegistros(registrosRes.data || []);
-              setFacturas(facturasRes.data || []);
-              setTrabajos(trabajosRes.data || []);
+              setParcelas((parcelasRes.data || []).filter(Boolean));
+              setCultivos((cultivosRes.data || []).filter(Boolean));
+              setRegistros((registrosRes.data || []).filter(Boolean));
+              setFacturas((facturasRes.data || []).filter(Boolean));
+              setTrabajos((trabajosRes.data || []).filter(Boolean));
               setDatosFiscales(datosFiscalesRes.data || null);
 
           } catch (err: any) {
@@ -117,19 +133,58 @@ const App: React.FC = () => {
   };
 
   // Generic CRUD Handlers
-  const handleAddItem = useCallback(async <T extends Omit<Identifiable, 'id'>,>(setter: React.Dispatch<React.SetStateAction<any[]>>, tableName: string, item: T) => {
-      if (!supabase) return;
-      const newItem = { ...item, id: uuidv4() };
-      const { error } = await supabase.from(tableName).insert(newItem);
-      if (error) { alert(`Error al añadir: ${error.message}`); } 
-      else { setter(prev => [...prev, newItem]); }
+  const handleAddItem = useCallback(async <T extends Omit<Identifiable, 'id'>>(
+    setter: React.Dispatch<React.SetStateAction<any[]>>,
+    tableName: string,
+    item: T
+  ) => {
+    if (!supabase) return;
+    const newItemWithId = { ...item, id: uuidv4() };
+
+    const { data, error } = await supabase
+        .from(tableName)
+        .insert([keysToSnakeCase(newItemWithId)])
+        .select();
+
+    if (error) {
+        alert(`Error al añadir: ${error.message}`);
+        return;
+    }
+
+    if (!data || data.length === 0) {
+        alert("Error: El elemento se guardó, pero no se pudo recuperar. Revise los permisos (RLS) en Supabase para la operación de LECTURA (SELECT).");
+        setter(prev => [...prev, newItemWithId]);
+        return;
+    }
+    
+    setter(prev => [...prev, data[0]]);
   }, []);
 
-  const handleUpdateItem = useCallback(async <T extends Identifiable,>(setter: React.Dispatch<React.SetStateAction<T[]>>, tableName: string, updatedItem: T) => {
-      if (!supabase) return;
-      const { error } = await supabase.from(tableName).update(updatedItem).eq('id', updatedItem.id);
-      if (error) { alert(`Error al actualizar: ${error.message}`); } 
-      else { setter(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item)); }
+  const handleUpdateItem = useCallback(async <T extends Identifiable>(
+    setter: React.Dispatch<React.SetStateAction<T[]>>,
+    tableName: string,
+    updatedItem: T
+  ) => {
+    if (!supabase) return;
+    
+    const { data, error } = await supabase
+        .from(tableName)
+        .update(keysToSnakeCase(updatedItem))
+        .eq('id', updatedItem.id)
+        .select();
+
+    if (error) {
+        alert(`Error al actualizar: ${error.message}`);
+        return;
+    }
+    
+    if (!data || data.length === 0) {
+        alert("Error: El elemento se actualizó, pero no se pudo recuperar. Revise los permisos (RLS) en Supabase para la operación de LECTURA (SELECT).");
+        setter(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
+        return;
+    }
+
+    setter(prev => prev.map(item => item.id === updatedItem.id ? data[0] : item));
   }, []);
 
   const handleDeleteItem = useCallback(async <T extends Identifiable,>(setter: React.Dispatch<React.SetStateAction<T[]>>, tableName: string, id: string) => {
@@ -143,7 +198,6 @@ const App: React.FC = () => {
   const handleDeleteParcela = async (id: string) => {
     if (!supabase) return;
     if (!window.confirm('¿Está seguro? Se eliminarán también los cultivos y trabajos asociados a esta parcela.')) return;
-    // Note: Best practice is to set up CASCADE DELETE in your database. This is a client-side fallback.
     const { data: relatedCultivos } = await supabase.from('cultivos').select('id').eq('parcela_id', id);
     const cultivoIds = relatedCultivos?.map(c => c.id) || [];
     if (cultivoIds.length > 0) await supabase.from('trabajos').delete().in('cultivo_id', cultivoIds);
@@ -162,12 +216,67 @@ const App: React.FC = () => {
     setTrabajos(prev => prev.filter(t => t.cultivo_id !== id));
   };
 
-  const handleSaveDatosFiscales = async (data: DatosFiscales) => {
-      if (!supabase) return;
-      const dataToSave = { ...data, id: DATOS_FISCALES_FIXED_ID };
-      const { error } = await supabase.from('datos_fiscales').upsert(dataToSave);
-      if (error) { alert(`Error al guardar datos fiscales: ${error.message}`); } 
-      else { setDatosFiscales(dataToSave); }
+  const handleSaveDatosFiscales = async (data: DatosFiscales): Promise<boolean> => {
+    if (!supabase) {
+      alert("Error: Cliente de Supabase no inicializado.");
+      return false;
+    }
+  
+    const payload = keysToSnakeCase({
+      ...data,
+      email: data.email || null,
+      telefono: data.telefono || null,
+    });
+    delete payload.id;
+  
+    const { data: existingRecord, error: checkError } = await supabase
+      .from('datos_fiscales')
+      .select('id')
+      .eq('id', DATOS_FISCALES_FIXED_ID)
+      .maybeSingle();
+  
+    if (checkError) {
+      console.error("Error checking for existing fiscal data:", checkError);
+      alert(`Error al verificar datos fiscales: ${checkError.message}`);
+      return false;
+    }
+  
+    let savedData, error;
+  
+    if (existingRecord) {
+      const response = await supabase
+        .from('datos_fiscales')
+        .update(payload)
+        .eq('id', DATOS_FISCALES_FIXED_ID)
+        .select()
+        .single();
+      savedData = response.data;
+      error = response.error;
+    } else {
+      const insertPayload = { ...payload, id: DATOS_FISCALES_FIXED_ID };
+      const response = await supabase
+        .from('datos_fiscales')
+        .insert(insertPayload) // insert expects an array, but with single() it works with an object
+        .select()
+        .single();
+      savedData = response.data;
+      error = response.error;
+    }
+  
+    if (error) {
+      console.error("Error saving fiscal data:", error);
+      alert(`Error al guardar datos fiscales: ${error.message}`);
+      return false;
+    }
+  
+    if (!savedData) {
+      alert("Error: Los datos se guardaron, pero no se pudieron recuperar. Revise los permisos (RLS) en Supabase para la operación de LECTURA (SELECT).");
+      setDatosFiscales({ ...data, id: DATOS_FISCALES_FIXED_ID }); // Optimistic update
+      return true;
+    }
+  
+    setDatosFiscales(savedData);
+    return true;
   };
 
   const handleExportData = useCallback(() => {
@@ -195,13 +304,13 @@ const App: React.FC = () => {
         }
         if (data.datosFiscales) {
             const { id, ...fiscalData } = data.datosFiscales; // Safely remove any existing id
-            await supabase.from('datos_fiscales').insert({ ...fiscalData, id: DATOS_FISCALES_FIXED_ID });
+            await supabase.from('datos_fiscales').insert({ ...keysToSnakeCase(fiscalData), id: DATOS_FISCALES_FIXED_ID });
         }
-        if (data.parcelas?.length) await supabase.from('parcelas').insert(data.parcelas);
-        if (data.cultivos?.length) await supabase.from('cultivos').insert(data.cultivos);
-        if (data.registrosFinancieros?.length) await supabase.from('registros_financieros').insert(data.registrosFinancieros);
-        if (data.facturas?.length) await supabase.from('facturas').insert(data.facturas);
-        if (data.trabajos?.length) await supabase.from('trabajos').insert(data.trabajos);
+        if (data.parcelas?.length) await supabase.from('parcelas').insert(keysToSnakeCase(data.parcelas));
+        if (data.cultivos?.length) await supabase.from('cultivos').insert(keysToSnakeCase(data.cultivos));
+        if (data.registrosFinancieros?.length) await supabase.from('registros_financieros').insert(keysToSnakeCase(data.registrosFinancieros));
+        if (data.facturas?.length) await supabase.from('facturas').insert(keysToSnakeCase(data.facturas));
+        if (data.trabajos?.length) await supabase.from('trabajos').insert(keysToSnakeCase(data.trabajos));
         
         alert('¡Datos importados con éxito! La aplicación se recargará.');
         window.location.reload();
