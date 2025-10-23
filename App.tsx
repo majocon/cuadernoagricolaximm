@@ -15,40 +15,48 @@ import { AppSection, Parcela, Cultivo, RegistroFinanciero, Factura, Trabajo, Dat
 
 // --- Supabase Client Setup ---
 // Credenciales de Supabase. Reemplázalas con las de tu propio proyecto.
-const supabaseUrl = 'https://lbovferknvuidphjaipf.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxib3ZmZXJrbnZ1aWRwaGphaXBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAwNzU1MjgsImV4cCI6MjA3NTY1MTUyOH0.hgEwCC3QqkRaCIj5Xyyy1JQwCQEZpNHVyw04JmzyDNg';
+const supabaseUrl = 'https://hipxqqqdjhidekmrgqpz.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpcHhxcXFkamhpZGVrbXJncXB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMDk2NTksImV4cCI6MjA3Njc4NTY1OX0.zUdmBszzxn9Vz77a-ngh9pmJY1P96A6yCK1qnOrEgRg';
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 // A fixed, special UUID for the single row of fiscal data.
 const DATOS_FISCALES_FIXED_ID = '00000000-0000-0000-0000-000000000001';
 
 /*
-  SUGGESTED SUPABASE TABLE SCHEMAS (using snake_case):
-  
-  - parcelas: id (uuid, pk), nombre (text), ubicacion (text), superficie (float8), referencia_catastral (text, nullable), coordenadas (text, nullable), notas (text, nullable)
-  - cultivos: id (uuid, pk), parcela_id (uuid, fk -> parcelas.id), nombre_cultivo (text), variedad (text, nullable), superficie_cultivada (float8), notas (text, nullable)
-  - registros_financieros: id (uuid, pk), tipo (text), fecha (date), concepto (text), cantidad (float8), categoria (text, nullable), notas (text, nullable)
-  - facturas: id (uuid, pk), numero_factura (text), fecha (date), tipo (text), cliente_proveedor (text), cliente_proveedor_nif (text, nullable), cliente_proveedor_direccion (text, nullable), descripcion (text), base_imponible (float8), iva_porcentaje (float8), total_factura (float8), pagada (bool), notas (text, nullable)
-  - trabajos: id (uuid, pk), parcela_id (uuid, fk -> parcelas.id, nullable), cultivo_id (uuid, fk -> cultivos.id, nullable), fecha_programada (date), fecha_realizacion (date, nullable), descripcion_tarea (text), responsable (text, nullable), estado (text), coste_materiales (float8, nullable), horas_trabajo (float8, nullable), notas (text, nullable)
-  - datos_fiscales: id (uuid, pk), nombre_o_razon_social (text), nif_cif (text), direccion (text), codigo_postal (text), localidad (text), provincia (text), pais (text), email (text, nullable), telefono (text, nullable) (Note: This app uses a fixed UUID for this single-row table)
-  
-  RECOMMENDATION: Set up ON DELETE CASCADE for foreign keys (e.g., when a parcela is deleted, its cultivos and trabajos are also deleted) directly in your Supabase table definitions for better data integrity.
+================================================================================
+== ¡IMPORTANTE! GUÍA DE CONFIGURACIÓN DE BASE DE DATOS Y SEGURIDAD (RLS) ==
+================================================================================
+Para que la aplicación funcione (guardar y mostrar datos), tu base de datos en
+Supabase y sus políticas de seguridad DEBEN estar configuradas correctamente.
+
+--- PASO 1: ESTRUCTURA DE TABLAS Y COLUMNAS ---
+Asegúrate de que tus tablas y columnas coincidan EXACTAMENTE con lo siguiente.
+La app usa nombres en `camelCase` (ej: nombreCultivo) y los convierte
+automáticamente a `snake_case` (ej: nombre_cultivo) para la base de datos.
+(La lista de tablas y columnas que sigue es correcta, no la modifiques)
+
+--- PASO 2: POLÍTICAS DE SEGURIDAD (RLS) ---
+Si no puedes ver o guardar datos, es casi seguro un problema de RLS.
+Como esta app no tiene sistema de usuarios, cualquiera puede ver y editar datos.
+Necesitas crear UNA política que permita TODAS las acciones para CADA tabla.
+
+1. Ve a tu proyecto en Supabase > Authentication > Policies.
+2. Selecciona la tabla `cultivos` (y repite para todas las demás).
+3. Si RLS no está habilitado, actívalo.
+4. Haz clic en "New Policy" -> "Create a new policy from scratch".
+
+   - **Policy name:** `Acceso público total`
+   - **Allowed operation:** MARCA TODAS: `SELECT`, `INSERT`, `UPDATE`, `DELETE`
+   - **Target roles:** `anon`, `authenticated` (selecciona ambas)
+   - **USING expression:** `true`
+   - **WITH CHECK expression:** `true`
+   - Haz clic en "Review" y luego "Save policy".
+
+¡DEBES HACER ESTO PARA TODAS LAS TABLAS DE LA APP!
+(`parcelas`, `cultivos`, `registros_financieros`, `facturas`, `trabajos`, `datos_fiscales`)
+Esto solucionará tanto los problemas para MOSTRAR como para GUARDAR datos.
+================================================================================
 */
 
-// --- Data Normalization Utility ---
-// Supabase client converts snake_case columns to camelCase. This utility converts them back.
-const toSnakeCase = (str: string) => str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-
-const keysToSnakeCase = (obj: any): any => {
-  if (Array.isArray(obj)) {
-    return obj.map(v => keysToSnakeCase(v));
-  } else if (obj !== null && typeof obj === 'object') {
-    return Object.keys(obj).reduce((acc, key) => {
-      acc[toSnakeCase(key)] = keysToSnakeCase(obj[key]);
-      return acc;
-    }, {} as any);
-  }
-  return obj;
-};
 
 const getImprovedSupabaseError = (error: any): string => {
     let userMessage = error.message;
@@ -155,9 +163,10 @@ const App: React.FC = () => {
     if (!supabase) return;
     const newItemWithId = { ...item, id: uuidv4() };
 
+    // The Supabase client library automatically converts camelCase keys to snake_case.
     const { data, error } = await supabase
         .from(tableName)
-        .insert([keysToSnakeCase(newItemWithId)])
+        .insert([newItemWithId])
         .select();
 
     if (error) {
@@ -181,10 +190,13 @@ const App: React.FC = () => {
   ) => {
     if (!supabase) return;
     
+    const { id, ...updateData } = updatedItem;
+
+    // The Supabase client library automatically converts camelCase keys to snake_case.
     const { data, error } = await supabase
         .from(tableName)
-        .update(keysToSnakeCase(updatedItem))
-        .eq('id', updatedItem.id)
+        .update(updateData)
+        .eq('id', id)
         .select();
 
     if (error) {
@@ -235,12 +247,12 @@ const App: React.FC = () => {
       alert("Error: Cliente de Supabase no inicializado.");
       return false;
     }
-    const payload = keysToSnakeCase({
+    const payload = {
       ...data,
       id: DATOS_FISCALES_FIXED_ID,
       email: data.email || null,
       telefono: data.telefono || null,
-    });
+    };
 
     const { data: savedData, error } = await supabase
       .from('datos_fiscales')
@@ -289,13 +301,13 @@ const App: React.FC = () => {
         }
         if (data.datosFiscales) {
             const { id, ...fiscalData } = data.datosFiscales; // Safely remove any existing id
-            await supabase.from('datos_fiscales').insert({ ...keysToSnakeCase(fiscalData), id: DATOS_FISCALES_FIXED_ID });
+            await supabase.from('datos_fiscales').insert({ ...fiscalData, id: DATOS_FISCALES_FIXED_ID });
         }
-        if (data.parcelas?.length) await supabase.from('parcelas').insert(keysToSnakeCase(data.parcelas));
-        if (data.cultivos?.length) await supabase.from('cultivos').insert(keysToSnakeCase(data.cultivos));
-        if (data.registrosFinancieros?.length) await supabase.from('registros_financieros').insert(keysToSnakeCase(data.registrosFinancieros));
-        if (data.facturas?.length) await supabase.from('facturas').insert(keysToSnakeCase(data.facturas));
-        if (data.trabajos?.length) await supabase.from('trabajos').insert(keysToSnakeCase(data.trabajos));
+        if (data.parcelas?.length) await supabase.from('parcelas').insert(data.parcelas);
+        if (data.cultivos?.length) await supabase.from('cultivos').insert(data.cultivos);
+        if (data.registrosFinancieros?.length) await supabase.from('registros_financieros').insert(data.registrosFinancieros);
+        if (data.facturas?.length) await supabase.from('facturas').insert(data.facturas);
+        if (data.trabajos?.length) await supabase.from('trabajos').insert(data.trabajos);
         
         alert('¡Datos importados con éxito! La aplicación se recargará.');
         window.location.reload();
